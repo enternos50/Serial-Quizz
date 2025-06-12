@@ -6,16 +6,25 @@ const { OpenAI } = require('openai');
 const app = express();
 app.use(cors());
 
-console.log("🔐 OPENAI_API_KEY:", process.env.OPENAI_API_KEY ? "OK" : "Missing");
+// 🔐 Vérifie que la clé est bien chargée
+if (!process.env.OPENAI_API_KEY) {
+  console.error("❌ OPENAI_API_KEY manquante dans le fichier .env");
+  process.exit(1);
+} else {
+  console.log("🔐 OPENAI_API_KEY: OK");
+}
 
-
+// ⚙️ Configuration OpenAI
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
+
+// ✅ Route d'accueil
 app.get('/', (req, res) => {
-  res.send('API Quiz IA en ligne. Utilise /api/quiz pour obtenir une question.');
+  res.send('✅ API Quiz IA en ligne. Utilise /api/quiz pour obtenir une question.');
 });
 
+// 🔍 Route pour générer un quiz
 app.get('/api/quiz', async (req, res) => {
   try {
     const completion = await openai.chat.completions.create({
@@ -34,22 +43,22 @@ app.get('/api/quiz', async (req, res) => {
     });
 
     const content = completion.choices[0].message.content;
-    let question;
 
     try {
-      question = JSON.parse(content);
+      const question = JSON.parse(content);
+      res.json(question);
     } catch (err) {
-      console.error("JSON parsing failed:", err);
-      return res.status(500).json({ error: "Invalid JSON format", raw: content });
+      console.error("❌ Erreur de parsing JSON :", err);
+      res.status(500).json({ error: "Le format JSON retourné est invalide", raw: content });
     }
 
-    res.json(question);
   } catch (error) {
-    console.error("OpenAI error:", error);
-    res.status(500).json({ error: "Something went wrong" });
+    console.error("❌ Erreur OpenAI :", error);
+    res.status(500).json({ error: "Erreur lors de la génération de la question" });
   }
 });
 
+// 🟢 Port dynamique (obligatoire sur Render)
 const PORT = process.env.PORT;
 app.listen(PORT, () => {
   console.log(`✅ Serveur en ligne sur le port ${PORT}`);
