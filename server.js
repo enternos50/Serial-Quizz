@@ -50,7 +50,7 @@ app.get('/api/quiz', async (req, res) => {
   }
 });
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT;
 app.listen(PORT, () => {
   console.log(`✅ Serveur en ligne sur le port ${PORT}`);
 });
