@@ -6,6 +6,9 @@ const { OpenAI } = require('openai');
 const app = express();
 app.use(cors());
 
+console.log("🔐 OPENAI_API_KEY:", process.env.OPENAI_API_KEY ? "OK" : "Missing");
+
+
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
