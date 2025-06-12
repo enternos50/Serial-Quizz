@@ -15,14 +15,12 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-app.get('/', (req, res) => {
-  res.send('✅ API Quiz IA en ligne. Accède à /api/quiz pour une question.');
-});
-
 app.get('/api/quiz', async (req, res) => {
   try {
+    console.log("Requête API reçue");
+
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4',
+      model: 'gpt-3.5-turbo', // ou 'gpt-3.5-turbo' si tu n'as pas accès à GPT-4
       messages: [
         {
           role: 'user',
@@ -31,10 +29,12 @@ app.get('/api/quiz', async (req, res) => {
   "text": "question",
   "options": ["option1", "option2", "option3", "option4"],
   "correct": "bonne réponse"
-}`,
+}`
         },
       ],
     });
+
+    console.log("Réponse OpenAI reçue:", completion);
 
     const content = completion.choices[0].message.content;
     let question;
@@ -42,8 +42,8 @@ app.get('/api/quiz', async (req, res) => {
     try {
       question = JSON.parse(content);
     } catch (err) {
-      console.error("❌ Erreur de parsing JSON:", err);
-      return res.status(500).json({ error: "Invalid JSON format", raw: content });
+      console.error("Erreur de parsing JSON :", err);
+      return res.status(500).json({ error: "Réponse invalide de l'API", raw: content });
     }
 
     res.json(question);

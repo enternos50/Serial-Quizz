@@ -9,19 +9,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 <body>
-    <main class="quiz-container">
-        <h1>Quiz IA</h1>
-        <div id="question-container">
-            <p id="question-text">La question apparaîtra ici</p>
-            <div id="options-container">
-                <!-- Les options seront générées dynamiquement -->
-            </div>
-        </div>
-        <div class="controls">
-            <button id="next-btn">Question suivante</button>
-            <span id="score">Score: 0</span>
-        </div>
-    </main>
-    <script src="quiz.js"></script>
+
+  <div id="quiz-box">
+    <h1 id="question">Chargement...</h1>
+    <div id="answers"></div>
+    <div id="status"></div>
+    <button onclick="loadQuestion()">Nouvelle question</button>
+  </div>
+
+  <script src="script.js"></script>
 </body>
+</html>
 </html>
