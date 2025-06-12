@@ -9,6 +9,9 @@ app.use(cors());
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
+app.get('/', (req, res) => {
+  res.send('API Quiz IA en ligne. Utilise /api/quiz pour obtenir une question.');
+});
 
 app.get('/api/quiz', async (req, res) => {
   try {
