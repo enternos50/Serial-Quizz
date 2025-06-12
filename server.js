@@ -6,25 +6,19 @@ const { OpenAI } = require('openai');
 const app = express();
 app.use(cors());
 
-// 🔐 Vérifie que la clé est bien chargée
 if (!process.env.OPENAI_API_KEY) {
-  console.error("❌ OPENAI_API_KEY manquante dans le fichier .env");
+  console.error("❌ OPENAI_API_KEY manquante");
   process.exit(1);
-} else {
-  console.log("🔐 OPENAI_API_KEY: OK");
 }
 
-// ⚙️ Configuration OpenAI
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-// ✅ Route d'accueil
 app.get('/', (req, res) => {
-  res.send('✅ API Quiz IA en ligne. Utilise /api/quiz pour obtenir une question.');
+  res.send('✅ API Quiz IA en ligne. Accède à /api/quiz pour une question.');
 });
 
-// 🔍 Route pour générer un quiz
 app.get('/api/quiz', async (req, res) => {
   try {
     const completion = await openai.chat.completions.create({
@@ -43,23 +37,24 @@ app.get('/api/quiz', async (req, res) => {
     });
 
     const content = completion.choices[0].message.content;
+    let question;
 
     try {
-      const question = JSON.parse(content);
-      res.json(question);
+      question = JSON.parse(content);
     } catch (err) {
-      console.error("❌ Erreur de parsing JSON :", err);
-      res.status(500).json({ error: "Le format JSON retourné est invalide", raw: content });
+      console.error("❌ Erreur de parsing JSON:", err);
+      return res.status(500).json({ error: "Invalid JSON format", raw: content });
     }
 
+    res.json(question);
   } catch (error) {
-    console.error("❌ Erreur OpenAI :", error);
-    res.status(500).json({ error: "Erreur lors de la génération de la question" });
+    console.error("❌ Erreur OpenAI:", error.response?.data || error.message || error);
+    res.status(500).json({ error: "Erreur lors de la génération de la question." });
   }
 });
 
-// 🟢 Port dynamique (obligatoire sur Render)
-const PORT = process.env.PORT;
+// Render impose d'écouter sur process.env.PORT
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`✅ Serveur en ligne sur le port ${PORT}`);
 });
