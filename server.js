@@ -1,60 +1,99 @@
+// server.js
 const express = require('express');
-const cors = require('cors');
-require('dotenv').config();
-const { OpenAI } = require('openai');
+const http = require('http');
+const { Server } = require('socket.io');
 
 const app = express();
-app.use(cors());
+const server = http.createServer(app);
+const io = new Server(server);
 
-if (!process.env.OPENAI_API_KEY) {
-  console.error("❌ OPENAI_API_KEY manquante");
-  process.exit(1);
-}
+app.use(express.static('public'));
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
-app.get('/api/quiz', async (req, res) => {
-  try {
-    console.log("Requête API reçue");
-
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-3.5-turbo', // ou 'gpt-3.5-turbo' si tu n'as pas accès à GPT-4
-      messages: [
-        {
-          role: 'user',
-          content: `Génère une question QCM sur l'intelligence artificielle, au format :
-{
-  "text": "question",
-  "options": ["option1", "option2", "option3", "option4"],
-  "correct": "bonne réponse"
-}`
-        },
-      ],
-    });
-
-    console.log("Réponse OpenAI reçue:", completion);
-
-    const content = completion.choices[0].message.content;
-    let question;
-
-    try {
-      question = JSON.parse(content);
-    } catch (err) {
-      console.error("Erreur de parsing JSON :", err);
-      return res.status(500).json({ error: "Réponse invalide de l'API", raw: content });
-    }
-
-    res.json(question);
-  } catch (error) {
-    console.error("❌ Erreur OpenAI:", error.response?.data || error.message || error);
-    res.status(500).json({ error: "Erreur lors de la génération de la question." });
+const quizData = [
+  {
+    question: "Quelle est la capitale de la France ?",
+    answers: ["Paris", "Londres", "Berlin", "Madrid"],
+    correct: "Paris"
+  },
+  {
+    question: "Combien font 7 x 6 ?",
+    answers: ["42", "36", "49", "56"],
+    correct: "42"
+  },
+  {
+    question: "Quel est l'océan le plus grand du monde ?",
+    answers: ["Atlantique", "Arctique", "Indien", "Pacifique"],
+    correct: "Pacifique"
+  },
+  {
+    question: "Qui a écrit 'Les Misérables' ?",
+    answers: ["Victor Hugo", "Émile Zola", "Molière", "Balzac"],
+    correct: "Victor Hugo"
   }
+];
+
+let players = {};
+let currentQuestion = 0;
+
+io.on('connection', socket => {
+  console.log('Nouveau joueur : ' + socket.id);
+  players[socket.id] = { score: 0, answered: false };
+
+  // Envoie la question courante au nouveau joueur
+  socket.emit('quizData', quizData[currentQuestion]);
+
+  socket.on('answer', answer => {
+    if (players[socket.id].answered) return; // joueur a déjà répondu
+
+    const correct = quizData[currentQuestion].correct;
+    if (answer === correct) {
+      players[socket.id].score++;
+    }
+    players[socket.id].answered = true;
+
+    // Vérifie si tous les joueurs ont répondu
+    const allAnswered = Object.values(players).every(p => p.answered);
+    if (allAnswered) {
+      // Prépare les scores à envoyer
+      const scores = {};
+      for (let id in players) {
+        scores[id] = players[id].score;
+        players[id].answered = false; // reset pour prochaine question
+      }
+      currentQuestion++;
+
+      if (currentQuestion < quizData.length) {
+        io.emit('nextQuestion', {
+          question: quizData[currentQuestion],
+          scores
+        });
+      } else {
+        io.emit('quizEnd', scores);
+      }
+    }
+  });
+
+  socket.on('disconnect', () => {
+    console.log('Joueur déconnecté : ' + socket.id);
+    delete players[socket.id];
+  });
 });
 
-// Render impose d'écouter sur process.env.PORT
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`✅ Serveur en ligne sur le port ${PORT}`);
+server.listen(3000, () => {
+  console.log('Serveur démarré sur http://localhost:3000');
 });
+
+if (currentQuestion < quizData.length) {
+  io.emit('nextQuestion', {
+    question: quizData[currentQuestion],
+    scores
+  });
+} else {
+  io.emit('quizEnd', scores);
+  currentQuestion = 0;   // <- Réinitialiser le quiz ici
+  // Optionnel: remettre à zéro les scores aussi
+  for (let id in players) {
+    players[id].score = 0;
+    players[id].answered = false;
+  }
+}
