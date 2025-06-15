@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <title>Sérial Quizz</title>
+  <link rel="stylesheet" href="style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron&display=swap" rel="stylesheet" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+</head>
+<body>
+  <div class="presenter">
+    <img src="https://resize.programme-television.org/original/var/premiere/storage/images/news/tv/actualites-audiovisuel/jean-luc-reichmann-surprend-en-annoncant-son-retour-a-la-radio-sur-la-station-4736242/103042258-1-fre-FR/Jean-Luc-Reichmann-surprend-en-annoncant-son-retour-a-la-radio-sur-la-station.jpg" alt="Avatar de Noah" />
+    <div class="name">Présentateur : Noah</div>
+  </div>
+
+  <div class="quiz-container">
+    <h1>Quiz IA - Multijoueur</h1>
+    <div id="question-container">
+      <p id="question-text"></p>
+      <div id="options-container"></div>
+    </div>
+    <div class="controls">
+      <span id="score">Score: 0</span>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="client.js"></script>
+</body>
+</html>

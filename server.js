@@ -1,4 +1,3 @@
-// server.js
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
@@ -36,30 +35,35 @@ let players = {};
 let currentQuestion = 0;
 
 io.on('connection', socket => {
-  console.log('Nouveau joueur : ' + socket.id);
-  players[socket.id] = { score: 0, answered: false };
+  console.log('Nouveau joueur connecté :', socket.id);
 
-  // Envoie la question courante au nouveau joueur
+  players[socket.id] = { score: 0, answered: false };
+  
+  // Ajoutez ces logs
+  console.log('Envoi de la question :', quizData[currentQuestion]);
+  console.log('État actuel des joueurs :', players);
+
   socket.emit('quizData', quizData[currentQuestion]);
 
   socket.on('answer', answer => {
-    if (players[socket.id].answered) return; // joueur a déjà répondu
+    const player = players[socket.id];
+    if (!player || player.answered) return;
 
-    const correct = quizData[currentQuestion].correct;
-    if (answer === correct) {
-      players[socket.id].score++;
+    const correctAnswer = quizData[currentQuestion].correct;
+    if (answer === correctAnswer) {
+      player.score++;
     }
-    players[socket.id].answered = true;
 
-    // Vérifie si tous les joueurs ont répondu
+    player.answered = true;
+
     const allAnswered = Object.values(players).every(p => p.answered);
     if (allAnswered) {
-      // Prépare les scores à envoyer
       const scores = {};
       for (let id in players) {
         scores[id] = players[id].score;
-        players[id].answered = false; // reset pour prochaine question
+        players[id].answered = false;
       }
+
       currentQuestion++;
 
       if (currentQuestion < quizData.length) {
@@ -69,31 +73,21 @@ io.on('connection', socket => {
         });
       } else {
         io.emit('quizEnd', scores);
+        currentQuestion = 0;
+        for (let id in players) {
+          players[id].score = 0;
+          players[id].answered = false;
+        }
       }
     }
   });
 
   socket.on('disconnect', () => {
-    console.log('Joueur déconnecté : ' + socket.id);
+    console.log('Joueur déconnecté :', socket.id);
     delete players[socket.id];
   });
 });
 
 server.listen(3000, () => {
-  console.log('Serveur démarré sur http://localhost:3000');
+  console.log('✅ Serveur démarré sur http://localhost:3000');
 });
-
-if (currentQuestion < quizData.length) {
-  io.emit('nextQuestion', {
-    question: quizData[currentQuestion],
-    scores
-  });
-} else {
-  io.emit('quizEnd', scores);
-  currentQuestion = 0;   // <- Réinitialiser le quiz ici
-  // Optionnel: remettre à zéro les scores aussi
-  for (let id in players) {
-    players[id].score = 0;
-    players[id].answered = false;
-  }
-}
