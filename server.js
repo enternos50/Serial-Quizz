@@ -36,14 +36,19 @@ let currentQuestion = 0;
 
 io.on('connection', socket => {
   console.log('Nouveau joueur connecté :', socket.id);
+  players[socket.id] = { score: 0, answered: false, pseudo: null };
 
-  players[socket.id] = { score: 0, answered: false };
-  
-  // Ajoutez ces logs
-  console.log('Envoi de la question :', quizData[currentQuestion]);
-  console.log('État actuel des joueurs :', players);
+  socket.on('setPseudo', pseudo => {
+    if (players[socket.id]) {
+      players[socket.id].pseudo = pseudo;
+      console.log(`👤 Joueur "${pseudo}" connecté (ID: ${socket.id})`);
 
-  socket.emit('quizData', quizData[currentQuestion]);
+      // Envoyer la première question
+      if (quizData[currentQuestion]) {
+        socket.emit('quizData', quizData[currentQuestion]);
+      }
+    }
+  });
 
   socket.on('answer', answer => {
     const player = players[socket.id];
@@ -60,7 +65,10 @@ io.on('connection', socket => {
     if (allAnswered) {
       const scores = {};
       for (let id in players) {
-        scores[id] = players[id].score;
+        scores[id] = {
+          score: players[id].score,
+          pseudo: players[id].pseudo || "Anonyme"
+        };
         players[id].answered = false;
       }
 
@@ -87,6 +95,15 @@ io.on('connection', socket => {
     delete players[socket.id];
   });
 });
+
+socket.on('replay', () => {
+  if (quizData[0]) {
+    players[socket.id].score = 0;
+    players[socket.id].answered = false;
+    socket.emit('quizData', quizData[0]);
+  }
+});
+
 
 server.listen(3000, () => {
   console.log('✅ Serveur démarré sur http://localhost:3000');
