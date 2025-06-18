@@ -37,6 +37,14 @@ let currentQuestion = 0;
 io.on('connection', socket => {
   console.log('Nouveau joueur connecté :', socket.id);
   players[socket.id] = { score: 0, answered: false, pseudo: null };
+  
+  socket.on('replay', () => {
+  if (quizData[0]) {
+    players[socket.id].score = 0;
+    players[socket.id].answered = false;
+    socket.emit('quizData', quizData[0]);
+  }
+});
 
   socket.on('setPseudo', pseudo => {
     if (players[socket.id]) {
@@ -96,13 +104,7 @@ io.on('connection', socket => {
   });
 });
 
-socket.on('replay', () => {
-  if (quizData[0]) {
-    players[socket.id].score = 0;
-    players[socket.id].answered = false;
-    socket.emit('quizData', quizData[0]);
-  }
-});
+
 
 
 server.listen(3000, () => {
